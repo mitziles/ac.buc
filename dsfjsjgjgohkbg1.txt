@@ -1,0 +1,96 @@
+#include <xc.h>
+#include <string.h>
+#include <stdlib.h>
+
+__PROG_CONFIG(1,0x3FE4); 	
+__PROG_CONFIG( 2,0x3EFF); 	
+
+unsigned char a, b=0, c=0,d;
+int  rec_var;
+int p=1;
+int pr;
+unsigned char v[10] = {	0xC0,	0xF9, 	0xA4, 	0xB0, 	0x99, 	0x92, 0x82, 0xF8, 0x80, 0x90};
+char *logo = (char *) "\r\n Informatica Aplicata 2. Counter = ";
+char *logo1 = (char *) "\r Dati doua cifre. ";
+char *logo2 = (char *) "\r Cifrele date sunt:  ";
+char *logo3 = (char *) "\r\n Produsul lor este: ";
+char *logo4 = (char *) "  si  ";
+
+
+void init (void);
+void interrupt ia2(void); 
+void send_string(const char *buffer, int size);
+int inmultire (unsigned char x, unsigned char y);
+
+void main(void)
+{
+ init();
+   send_string(logo1, strlen(logo1));
+   send_string(logo2, strlen(logo2));
+	    while(c<2)
+      { 
+	 	if(RCIF)               
+            {  	 c++;
+                 rec_var = RCREG  ;  
+   
+	     TXREG   = rec_var;   
+	     if(c%2!=0) send_string(logo4, strlen(logo4));
+	       
+	         p=p*(rec_var-'0') ;                                  	     
+            }          
+      }           
+	 char text[3];
+	 itoa(text,p,10);     
+	 
+	 send_string(logo3,strlen(logo3));
+	 send_string(text,strlen(text));
+}
+
+void init (void)
+{
+	OSCCON=0x73;   
+	ANSELB = 0x00; 
+	TRISB = 0x00;  
+	PORTB = 0x00;	
+	TRISC = 0xBF; 
+	PORTC = 0x00;	
+   	ANSELD = 0x00; 	
+	TRISD = 0x00;  	
+	PORTD = 0xFF;
+	
+	SPBRG   = 12;   	
+	TXEN    = 1;    	
+	BRGH    = 0;    	
+	SPEN    = 1;    	
+	CREN    = 1;    	
+	BRG16   = 0;    	
+	SYNC    = 0;    	
+
+	T1CON = 0x11;  	
+                    	
+	TMR1IE = 1;    	
+	PEIE = 1;      	
+	GIE = 1;       	
+}
+
+void interrupt ia2(void)            	
+{                           		
+	if(TMR1IF)          	
+	{
+	 	TMR1IF = 0;    	
+	 	TMR1H = 0x3C;  	
+	 	TMR1L = 0xAF;  	
+		a++;            	
+	}
+}
+
+void send_string(const char *buffer, int size)
+{
+    while(size)
+    {
+        TXREG = *buffer;
+        while(!TXIF);       
+        buffer++;
+        size--;
+    }
+}
