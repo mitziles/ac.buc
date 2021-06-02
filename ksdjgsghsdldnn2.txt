@@ -1,0 +1,105 @@
+#include <xc.h>
+__PROG_CONFIG(1,0x3FE4); 
+__PROG_CONFIG(2,0x1EFF);
+
+#define LED RA0
+#define START RA1
+#define STOP_RESET RA2
+#define TIMP_INT RA3
+#define Secunde PORTB
+#define Sutimi PORTD
+#define _XTAL_FREQ 8000000
+
+unsigned char a;
+unsigned int timp,timpint,i;
+unsigned char v[10] = { 0x03, 0x9F, 0x25, 0x0D, 0x99, 0x49, 0x41, 0x1F, 0x01, 0x09};
+void init (void);
+void interrupt ia2(void); 
+
+void main(void)
+{
+   a=0;
+   timp=0;
+   timpint=0;
+   i=1;
+   init();
+   while (1) 
+   {
+      if(!STOP_RESET) 
+      {
+	 __delay_ms(1000);
+	 if(!STOP_RESET) 
+	 {
+	    a=0;
+	    LED=1;
+	    timp=0;
+	    timpint=0;
+	    Secunde = v[0]-0x01; 
+	    Sutimi = v[0];
+	 }
+      }
+      if(!TIMP_INT) 
+      {
+	 __delay_ms(250); 
+	 if(i==0) 
+	 {
+	  LED=1;
+	  Secunde=v[timp/10]-0x01;
+	  Sutimi=v[timp%10];
+	  i=1;
+	 }
+	 else
+	 {
+	  LED=0;
+	  Secunde=v[timpint/10]-0x01;
+	  Sutimi=v[timpint%10];
+	  i=0;
+	 }
+      }
+      if(!START) 
+      {
+	 LED=1; 
+	 while(STOP_RESET==1 && timp<99)
+	 {
+	     if(a>=2 && timp<99)
+	     {
+		 a=0;
+		 timp++;
+		 Secunde=v[timp/10]-0x01;
+		 Sutimi=v[timp%10];
+	     }
+	     if(!TIMP_INT)
+		timpint=timp;
+	 }
+      }
+   }
+}
+
+void init (void)
+{
+	OSCCON=0x73;  
+	ANSELB = 0x00;
+	ANSELA = 0x00;
+	ANSELD = 0x00;
+	TRISA =0xFE;
+	TRISB = 0x00; 
+	TRISD = 0x00; 
+	PORTB = v[0]-0x01;  
+	PORTD = v[0];
+	PORTA = 0xFF; 
+	T1CON = 0x11; 
+	TMR1IE = 1; 
+	PEIE = 1;    
+	GIE = 1;  
+}
+
+void interrupt ia2(void) 
+{ 
+	if(TMR1IF)  
+	{
+ 		TMR1IF = 0;  
+ 		TMR1H = 0x3C;  
+ 		TMR1L = 0xAF; 
+ 		a++; 
+ 	}
+} 
